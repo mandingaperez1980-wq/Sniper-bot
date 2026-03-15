@@ -13,7 +13,7 @@ input{width:100%;padding:12px;border-radius:6px;background:#131828;border:1px so
 <script src="https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/bs58@6.0.0/dist/index.umd.js"></script>
 </head><body>
-<div class="c"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px">🎯</div><div><div style="font-size:15px;font-weight:800;color:#22c55e">MOMENTUM SNIPER</div><div style="font-size:9px;color:#5c6478">v7 · AGRESIVO · Jupiter NEW API</div></div></div></div>
+<div class="c"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px">🎯</div><div><div style="font-size:15px;font-weight:800;color:#22c55e">MOMENTUM SNIPER</div><div style="font-size:9px;color:#5c6478">v8 · ULTRA AGRESIVO</div></div></div></div>
 <div class="c"><div id="step">⏳ Cargando Solana Web3...</div></div>
 <div class="c" id="cCard"><div class="t">🔑 WALLET</div>
 <div class="sw s">⚠️ Wallet NUEVA dedicada. NUNCA la principal.</div>
@@ -84,9 +84,11 @@ setTimeout(async()=>{try{BL=(await CN.getBalance(KP.publicKey))/solanaWeb3.LAMPO
 return{ok:true,txId}}catch(e){al('Swap ERR: '+e.message,'#fca5a5');return{ok:false}}}
 
 async function cycle(){scN++;try{
-const all=[];for(const q of['pump.fun SOL','solana meme']){try{const r=await tFetch(DEX+'/search?q='+encodeURIComponent(q),{},12000);if(r.ok){const d=await r.json();all.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'))}}catch(_){}}
+const all=[];for(const q of['pump.fun SOL','solana meme','solana new token','SOL trending','memecoin solana','solana pump']){try{const r=await tFetch(DEX+'/search?q='+encodeURIComponent(q),{},12000);if(r.ok){const d=await r.json();all.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'))}}catch(_){}}
+try{const r=await tFetch('https://api.dexscreener.com/token-boosts/top/v1',{},10000);if(r.ok){const d=await r.json();for(const t of(d||[]).filter(x=>x.chainId==='solana').slice(0,12)){try{const pr=await tFetch(DEX+'/tokens/'+t.tokenAddress,{},8000);if(pr.ok){const pd=await pr.json();all.push(...(pd.pairs||[]))}}catch(_){}}}}catch(_){}
+try{const r=await tFetch('https://api.dexscreener.com/token-profiles/latest/v1',{},10000);if(r.ok){const d=await r.json();for(const t of(d||[]).filter(x=>x.chainId==='solana').slice(0,8)){try{const pr=await tFetch(DEX+'/tokens/'+t.tokenAddress,{},8000);if(pr.ok){const pd=await pr.json();all.push(...(pd.pairs||[]))}}catch(_){}}}}catch(_){}
 const now=Date.now(),seen=new Set();
-const tk=all.filter(p=>{if(!p||seen.has(p.pairAddress))return false;seen.add(p.pairAddress);const mc=p.marketCap||p.fdv||0;return mc>=1e6&&mc<=5e7&&(p.liquidity?.usd||0)>=1e4}).map(p=>{
+const tk=all.filter(p=>{if(!p||seen.has(p.pairAddress))return false;seen.add(p.pairAddress);const mc=p.marketCap||p.fdv||0;return mc>=2e5&&mc<=5e7&&(p.liquidity?.usd||0)>=5e3}).map(p=>{
 const b5=p.txns?.m5?.buys||0,s5=p.txns?.m5?.sells||0,br=b5+s5>0?b5/(b5+s5):0,c5=p.priceChange?.m5||0,c1=p.priceChange?.h1||0;
 let sc=0;if(br>.7)sc+=25;else if(br>.6)sc+=15;if(c5>5&&c1>10)sc+=25;else if(c5>2)sc+=15;if(b5+s5>50)sc+=15;else if(b5+s5>20)sc+=8;if((p.liquidity?.usd||0)>5e4)sc+=10;
 return{sym:p.baseToken?.symbol||'?',addr:p.baseToken?.address||'',pr:+(p.priceUsd||0),mc:p.marketCap||p.fdv||0,liq:p.liquidity?.usd||0,br,c5,c1,sc,tx:b5+s5}}).sort((a,b)=>b.sc-a.sc);
@@ -94,15 +96,14 @@ if(scN%3===0)al('Scan #'+scN+' | '+tk.length+' tokens'+(tk[0]?' | Top:'+tk[0].sy
 
 const eb=SM?5:BL;
 if(tk.length&&pos.length<8&&eb>=E){const pick=tk.find(t=>t.sc>=45&&t.br>=.55&&!pos.find(p=>p.addr===t.addr));
-if(pick&&pick.liq>=1e4&&(pick.mc<=0||pick.liq/pick.mc>=.03)){
+if(pick&&pick.liq>=5e3&&(pick.mc<=0||pick.liq/pick.mc>=.02)){
 al('🎯 SNIPE: '+pick.sym+' Sc:'+pick.sc+' Buy:'+Math.round(pick.br*100)+'%','#ec4899');
 const r=await jSwap(pick.addr,E,true);if(r.ok){pos.push({sym:pick.sym,addr:pick.addr,ep:pick.pr,cp:pick.pr,pp:pick.pr,t1:false,t2:false,t3:false,sd:0,rl:0});al('✅ '+pick.sym+' @ $'+pick.pr.toFixed(8)+' | '+E+'◎','#86efac')}}}
 
 for(const p of[...pos]){try{const r=await tFetch(DEX+'/tokens/'+p.addr,{},8000);if(r.ok){const d=await r.json();const pr=(d.pairs||[]).find(x=>x.chainId==='solana');if(pr)p.cp=+(pr.priceUsd||p.cp)}}catch(_){p.cp*=(1+(Math.random()-.46)*.012)}
 if(p.cp>p.pp)p.pp=p.cp;const m=p.cp/p.ep;
 if(m>=1.5&&!p.t1){p.t1=true;const v=E*m*.5;await jSwap(p.addr,v,false);p.sd+=50;p.rl+=v;al('💰 '+p.sym+' TP1 1.5x → 50%','#06b6d4')}
-else if(m>=2.5&&!p.t2){p.t2=true;const v=E*m*.25;await jSwap(p.addr,v,false);p.sd+=25;p.rl+=v;al('💰 '+p.sym+' TP2 2.5x → 25%','#06b6d4')}
-else if(m>=4&&!p.t3){p.t3=true;const v=E*m*.15;await jSwap(p.addr,v,false);p.sd+=15;p.rl+=v;al('💰 '+p.sym+' TP3 4x → 15%','#06b6d4')}
+else if(m>=2.5&&!p.t2&&p.sd<100){p.t2=true;const rem=100-p.sd;const v=E*m*(rem/100);await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;al('💰 '+p.sym+' TP2 2.5x → SELL ALL '+rem+'%','#86efac');pos=pos.filter(x=>x.addr!==p.addr)}
 else if(m<=.75&&p.sd<100){const v=E*m*(100-p.sd)/100;await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;al('🛑 '+p.sym+' SL '+(((m-1)*100).toFixed(0))+'%','#fca5a5');pos=pos.filter(x=>x.addr!==p.addr)}
 else if(m>=1.3){const dr=((p.pp-p.cp)/p.pp)*100;if(dr>=20&&p.sd<100){const v=E*m*(100-p.sd)/100;await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;al('📉 '+p.sym+' Trail -'+dr.toFixed(0)+'%','#fde68a');pos=pos.filter(x=>x.addr!==p.addr)}}}
 pos=pos.filter(p=>p.sd<100);
@@ -111,7 +112,7 @@ stp(bOn?'🤖 Activo #'+scN+' | '+tk.length+'tk | '+pos.length+'pos':'Off')
 }catch(e){al('Err: '+e.message,'#fca5a5')}}
 
 function togBot(){const btn=document.getElementById('bbtn');if(bOn){clearInterval(bIv);bOn=false;btn.textContent='▶ INICIAR BOT';btn.className='b bg';al('🤖 Stop','#fde68a')}
-else{bOn=true;btn.textContent='⏹ DETENER';btn.className='b br';al('🤖 Bot autónomo — scan cada 30s','#86efac');cycle();bIv=setInterval(cycle,30000)}}
+else{bOn=true;btn.textContent='⏹ DETENER';btn.className='b br';al('🤖 Bot AGRESIVO — scan cada 15s','#86efac');cycle();bIv=setInterval(cycle,15000)}}
 
 window.addEventListener('load',async()=>{let t=0;while(!window.solanaWeb3&&t<20){await new Promise(r=>setTimeout(r,500));t++}
 if(window.solanaWeb3){stp('✅ Listo — Pegá clave y tocá CONECTAR');al('Solana Web3 ✓','#86efac')}else{stp('❌ Web3 no cargó — Recargá');al('Error lib','#fca5a5')}
