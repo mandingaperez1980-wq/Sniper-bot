@@ -13,7 +13,7 @@ input{width:100%;padding:12px;border-radius:6px;background:#131828;border:1px so
 <script src="https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
 <script src="https://unpkg.com/bs58@6.0.0/dist/index.umd.js"></script>
 </head><body>
-<div class="c"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px">🎯</div><div><div style="font-size:15px;font-weight:800;color:#22c55e">MOMENTUM SNIPER</div><div style="font-size:9px;color:#5c6478">v4 · Autónomo · GitHub Pages</div></div></div></div>
+<div class="c"><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px">🎯</div><div><div style="font-size:15px;font-weight:800;color:#22c55e">MOMENTUM SNIPER</div><div style="font-size:9px;color:#5c6478">v6 · Autónomo · Jupiter NEW API</div></div></div></div>
 <div class="c"><div id="step">⏳ Cargando Solana Web3...</div></div>
 <div class="c" id="cCard"><div class="t">🔑 WALLET</div>
 <div class="sw s">⚠️ Wallet NUEVA dedicada. NUNCA la principal.</div>
@@ -61,21 +61,30 @@ function disc(){KP=null;CN=null;PK='';BL=0;SM=true;if(bOn)togBot();try{localStor
 document.getElementById('cCard').style.display='block';document.getElementById('iCard').style.display='none';
 document.getElementById('pk').value='';document.getElementById('cbtn').textContent='🔑 CONECTAR';document.getElementById('cbtn').disabled=false;stp('Desconectada')}
 
+function tFetch(url,opts,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||20000);return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t))}
 async function jSwap(addr,amt,buy){const iM=buy?SOL:addr,oM=buy?addr:SOL,am=buy?Math.floor(amt*solanaWeb3.LAMPORTS_PER_SOL):Math.floor(amt*1e6);
 if(SM||!KP){al('[SIM] '+(buy?'BUY':'SELL')+' '+amt.toFixed(4)+'◎','#06b6d4');return{ok:true}}
 try{al('Jupiter quote...');
-const qr=await fetch('https://quote-api.jup.ag/v6/quote?inputMint='+iM+'&outputMint='+oM+'&amount='+am+'&slippageBps=500',{signal:AbortSignal.timeout(15000)});
-if(!qr.ok)throw new Error('Q:'+qr.status);const q=await qr.json();if(q.error)throw new Error(q.error);
-const sr=await fetch('https://quote-api.jup.ag/v6/swap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteResponse:q,userPublicKey:PK,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true,prioritizationFeeLamports:'auto'}),signal:AbortSignal.timeout(15000)});
-if(!sr.ok)throw new Error('S:'+sr.status);const sd=await sr.json();if(sd.error)throw new Error(sd.error);
+const qUrl='https://lite-api.jup.ag/swap/v1/quote?inputMint='+iM+'&outputMint='+oM+'&amount='+am+'&slippageBps=500';
+al('→ '+qUrl.slice(0,80)+'...','#5c6478');
+const qr=await tFetch(qUrl,{},20000);
+al('Quote status: '+qr.status,'#a5f3fc');
+if(!qr.ok){const txt=await qr.text();throw new Error('Q:'+qr.status+' '+txt.slice(0,100))}
+const q=await qr.json();if(q.error)throw new Error('Q:'+q.error);
+al('Quote OK: '+JSON.stringify(q).slice(0,80)+'...','#86efac');
+const sr=await tFetch('https://lite-api.jup.ag/swap/v1/swap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteResponse:q,userPublicKey:PK,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true,prioritizationFeeLamports:'auto'})},20000);
+if(!sr.ok){const txt=await sr.text();throw new Error('S:'+sr.status+' '+txt.slice(0,100))}
+const sd=await sr.json();if(sd.error)throw new Error('S:'+sd.error);
+al('Swap TX recibida, firmando...','#a5f3fc');
 const tx=solanaWeb3.VersionedTransaction.deserialize(Uint8Array.from(atob(sd.swapTransaction),c=>c.charCodeAt(0)));
-tx.sign([KP]);const txId=await CN.sendRawTransaction(tx.serialize(),{skipPreflight:true,maxRetries:3});
+tx.sign([KP]);al('Enviando TX...','#a5f3fc');
+const txId=await CN.sendRawTransaction(tx.serialize(),{skipPreflight:true,maxRetries:3});
 al('✅ TX:'+txId.slice(0,20)+'...','#86efac');
 setTimeout(async()=>{try{BL=(await CN.getBalance(KP.publicKey))/solanaWeb3.LAMPORTS_PER_SOL;document.getElementById('bl').textContent=BL.toFixed(4)+' SOL'}catch(_){}},5000);
-return{ok:true,txId}}catch(e){al('Swap: '+e.message,'#fca5a5');return{ok:false}}}
+return{ok:true,txId}}catch(e){al('Swap ERR: '+e.message,'#fca5a5');return{ok:false}}}
 
 async function cycle(){scN++;try{
-const all=[];for(const q of['pump.fun SOL','solana meme']){try{const r=await fetch(DEX+'/search?q='+encodeURIComponent(q),{signal:AbortSignal.timeout(10000)});if(r.ok){const d=await r.json();all.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'))}}catch(_){}}
+const all=[];for(const q of['pump.fun SOL','solana meme']){try{const r=await tFetch(DEX+'/search?q='+encodeURIComponent(q),{},12000);if(r.ok){const d=await r.json();all.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'))}}catch(_){}}
 const now=Date.now(),seen=new Set();
 const tk=all.filter(p=>{if(!p||seen.has(p.pairAddress))return false;seen.add(p.pairAddress);const mc=p.marketCap||p.fdv||0;return mc>=5e5&&mc<=5e6&&(p.liquidity?.usd||0)>=1e4}).map(p=>{
 const b5=p.txns?.m5?.buys||0,s5=p.txns?.m5?.sells||0,br=b5+s5>0?b5/(b5+s5):0,c5=p.priceChange?.m5||0,c1=p.priceChange?.h1||0;
@@ -89,7 +98,7 @@ if(pick&&pick.liq>=1e4&&(pick.mc<=0||pick.liq/pick.mc>=.03)){
 al('🎯 SNIPE: '+pick.sym+' Sc:'+pick.sc+' Buy:'+Math.round(pick.br*100)+'%','#ec4899');
 const r=await jSwap(pick.addr,E,true);if(r.ok){pos.push({sym:pick.sym,addr:pick.addr,ep:pick.pr,cp:pick.pr,pp:pick.pr,t1:false,t2:false,sd:0,rl:0});al('✅ '+pick.sym+' @ $'+pick.pr.toFixed(8)+' | '+E+'◎','#86efac')}}}
 
-for(const p of[...pos]){try{const r=await fetch(DEX+'/tokens/'+p.addr,{signal:AbortSignal.timeout(5000)});if(r.ok){const d=await r.json();const pr=(d.pairs||[]).find(x=>x.chainId==='solana');if(pr)p.cp=+(pr.priceUsd||p.cp)}}catch(_){p.cp*=(1+(Math.random()-.46)*.012)}
+for(const p of[...pos]){try{const r=await tFetch(DEX+'/tokens/'+p.addr,{},8000);if(r.ok){const d=await r.json();const pr=(d.pairs||[]).find(x=>x.chainId==='solana');if(pr)p.cp=+(pr.priceUsd||p.cp)}}catch(_){p.cp*=(1+(Math.random()-.46)*.012)}
 if(p.cp>p.pp)p.pp=p.cp;const m=p.cp/p.ep;
 if(m>=2&&!p.t1){p.t1=true;const v=E*m*.5;await jSwap(p.addr,v,false);p.sd+=50;p.rl+=v;al('💰 '+p.sym+' TP1 2x → 50%','#06b6d4')}
 else if(m>=3&&!p.t2){p.t2=true;const v=E*m*.25;await jSwap(p.addr,v,false);p.sd+=25;p.rl+=v;al('💰 '+p.sym+' TP2 3x → 25%','#06b6d4')}
