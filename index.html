@@ -1,0 +1,268 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#22c55e"><title>Sniper+Copy</title><style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#06080e;color:#dfe4ed;font-family:monospace;font-size:13px;padding:8px;min-height:100vh}
+.c{background:#0b0e18;border:1px solid #1a2035;border-radius:10px;padding:12px;margin-bottom:8px}.t{font-weight:700;font-size:10px;letter-spacing:2px;margin-bottom:6px}
+.tg{color:#22c55e}.tp{color:#a78bfa}
+.b{display:block;width:100%;padding:12px;border-radius:8px;border:none;font-weight:800;font-size:13px;margin-top:6px;font-family:monospace;cursor:pointer}
+.bg{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}.br{background:#1a1020;border:1px solid #ef444444;color:#ef4444}
+.bp{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff}
+input{width:100%;padding:10px;border-radius:6px;background:#131828;border:1px solid #1a2035;color:#f97316;font-size:11px;font-family:monospace;margin:4px 0}
+.s{padding:8px;border-radius:6px;font-size:11px;margin-bottom:4px}.sw{background:#f0b90b11;border:1px solid #f0b90b33;color:#fde68a}
+.log{background:#060810;border:1px solid #1a2035;border-radius:6px;padding:6px;max-height:280px;overflow-y:auto;font-size:9px;margin-top:6px}
+.le{padding:2px 0;border-bottom:1px solid #1a203522}.bal{font-size:26px;font-weight:800;color:#fff;text-align:center;padding:10px 0}
+#step{font-size:12px;font-weight:700;text-align:center;padding:10px}
+.tabs{display:flex;gap:3px;margin-bottom:6px}.tab{flex:1;padding:7px 2px;border-radius:6px;border:1px solid #1a2035;background:#0b0e18;color:#5c6478;font-size:9px;font-weight:700;text-align:center;cursor:pointer}
+.tab.on{background:#22c55e18;border-color:#22c55e44;color:#22c55e}
+.wc{background:#0d1120;border:1px solid #1a2035;border-radius:6px;padding:8px;margin:4px 0;font-size:10px}
+.sts{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0;font-size:9px;text-align:center}
+.st{background:#0d1120;border-radius:4px;padding:6px 2px}.stl{color:#5c6478;font-size:7px}.stv{font-weight:800;font-size:13px}
+</style>
+<script src="https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/bs58@6.0.0/dist/index.umd.js"></script>
+</head><body>
+<div class="c"><div style="display:flex;align-items:center;gap:6px"><div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#22c55e,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:14px">⚡</div><div><div style="font-size:14px;font-weight:800;color:#22c55e">SNIPER + COPY</div><div style="font-size:8px;color:#5c6478">v1 · Dual Mode · MCap<$20M</div></div></div></div>
+<div class="c"><div id="step" style="color:#f0b90b">⏳ Cargando...</div></div>
+<div class="c" id="cCard"><div class="t tg">🔑 WALLET</div>
+<div class="sw s">⚠️ Wallet dedicada. NUNCA la principal.</div>
+<input type="text" id="pk" placeholder="Clave privada Phantom..." autocomplete="off" spellcheck="false">
+<button class="b bg" id="cbtn" onclick="doConn()">🔑 CONECTAR</button><div id="cerr"></div></div>
+<div class="c" id="iCard" style="display:none"><div class="t tg">✅ CONECTADA</div>
+<div style="word-break:break-all;font-size:10px;color:#22c55e;background:#22c55e11;padding:6px;border-radius:4px" id="adr"></div>
+<div class="bal" id="bl">—</div>
+<div class="sts" id="stats"></div>
+<button class="b bg" id="bbtn" onclick="togBot()">▶ INICIAR DUAL BOT</button>
+<button class="b br" onclick="disc()" style="margin-top:4px;font-size:11px">Desconectar</button></div>
+<div class="tabs" id="tabs" style="display:none">
+<div class="tab on" onclick="sT('dash')">📊 DASH</div>
+<div class="tab" onclick="sT('sniper')">🎯 SNIPER</div>
+<div class="tab" onclick="sT('copy')">👁 COPY</div>
+<div class="tab" onclick="sT('log')">📋 LOG</div>
+</div>
+<div id="dashTab" class="c" style="display:none"><div class="t tg">📊 POSICIONES</div><div id="posL"></div></div>
+<div id="sniperTab" class="c" style="display:none"><div class="t tg">🎯 SNIPER TOKENS</div><div id="snpL"></div></div>
+<div id="copyTab" class="c" style="display:none"><div class="t tp">👁 SMART WALLETS</div><div id="wltL"></div></div>
+<div id="logTab" class="c"><div class="t tg">📋 LOG</div><div id="al" class="log"><div style="color:#5c6478">Esperando...</div></div></div>
+<div style="text-align:center;color:#353b4f;font-size:7px;margin-top:6px">⚠️ RIESGO EXTREMO · DYOR</div>
+<script>
+let KP=null,CN=null,PK='',BL=0,SM=true,bOn=false,bIv=null;
+const SOL='So11111111111111111111111111111111111111112',DEX='https://api.dexscreener.com/latest/dex';
+const RPCS=['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com','https://rpc.ankr.com/solana'];
+const E=0.25,MAX_POS=8,SL=25,MAX_W=10;
+const BL_ADDR=new Set([SOL,'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v','Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB','7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj','mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So','bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1','JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN','DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263','4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R','rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof','orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE']);
+const BL_SYM=new Set(['USDC','USDT','BUSD','DAI','SOL','WSOL','BTC','WBTC','ETH','WETH','MSOL','BSOL','STSOL','JUP','JITOSOL']);
+let pos=[],hist=[],wallets=[],snpTokens=[],scN=0,curTab='dash',totPnl=0,totTr=0,sniperBuys=0,copyBuys=0;
+function save(){try{localStorage.setItem('dc_p',JSON.stringify(pos));localStorage.setItem('dc_h',JSON.stringify(hist.slice(0,200)));localStorage.setItem('dc_w',JSON.stringify(wallets))}catch(_){}}
+function load(){try{pos=JSON.parse(localStorage.getItem('dc_p'))||[];hist=JSON.parse(localStorage.getItem('dc_h'))||[];wallets=JSON.parse(localStorage.getItem('dc_w'))||[];totPnl=hist.reduce((s,h)=>s+(h.pnl||0),0);totTr=hist.length}catch(_){}}
+function stp(m){document.getElementById('step').innerHTML=m}
+function al(m,c='#a5f3fc'){const e=document.getElementById('al'),t=new Date().toLocaleTimeString();e.innerHTML=`<div class="le"><span style="color:#5c6478">[${t}]</span> <span style="color:${c}">${m}</span></div>`+e.innerHTML;if(e.children.length>200)e.removeChild(e.lastChild)}
+function sT(t){curTab=t;['dash','sniper','copy','log'].forEach(x=>{document.getElementById(x+'Tab').style.display=x===t?'block':'none'});document.querySelectorAll('.tab').forEach((el,i)=>{el.className='tab'+(['dash','sniper','copy','log'][i]===t?' on':'')})}
+function tFetch(u,o,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||20000);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t))}
+function d58(s){s=s.trim().replace(/\s/g,'');const M={};'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'.split('').forEach((c,i)=>M[c]=i);let z=0;for(let i=0;i<s.length&&s[i]==='1';i++)z++;const sz=Math.ceil(s.length*733/1000)+1;const b=new Uint8Array(sz);for(let i=0;i<s.length;i++){const ch=M[s[i]];if(ch===undefined)throw new Error('Carácter inválido');let carry=ch;for(let j=sz-1;j>=0;j--){carry+=58*b[j];b[j]=carry%256;carry=Math.floor(carry/256)}}let st=0;while(st<sz&&b[st]===0)st++;const r=new Uint8Array(z+sz-st);for(let i=z+sz-st-1,j=sz-1;j>=st;i--,j--)r[i]=b[j];return r}
+
+// CONNECT
+async function doConn(){const btn=document.getElementById('cbtn'),inp=document.getElementById('pk'),err=document.getElementById('cerr');
+const pk=inp.value.trim().replace(/\s+/g,'');btn.textContent='⏳...';btn.disabled=true;err.innerHTML='';stp('⏳ Procesando...');
+await new Promise(r=>setTimeout(r,100));
+try{if(!pk)throw new Error('Pegá tu clave');if(pk.length<60)throw new Error('Clave corta');if(pk.includes(' '))throw new Error('Es seed phrase');
+let sk;if(window.bs58){try{sk=window.bs58.decode(pk)}catch(_){sk=d58(pk)}}else{sk=d58(pk)}
+if(sk.length!==64)throw new Error('Clave inválida');
+if(!window.solanaWeb3)throw new Error('Web3 no cargó');
+KP=solanaWeb3.Keypair.fromSecretKey(sk);PK=KP.publicKey.toString();
+for(const rpc of RPCS){try{CN=new solanaWeb3.Connection(rpc,'confirmed');const lam=await CN.getBalance(KP.publicKey);BL=lam/solanaWeb3.LAMPORTS_PER_SOL;al('✅ RPC: '+rpc.split('/')[2]+' | '+BL.toFixed(4)+' SOL','#86efac');break}catch(e){al('RPC: '+e.message.slice(0,40),'#fde68a')}}
+SM=false;try{localStorage.setItem('dc_k',pk)}catch(_){}
+stp('✅ Dual Bot listo');
+document.getElementById('cCard').style.display='none';document.getElementById('iCard').style.display='block';document.getElementById('tabs').style.display='flex';
+document.getElementById('adr').textContent=PK;document.getElementById('bl').textContent=BL.toFixed(4)+' SOL';
+sT('dash');
+}catch(e){stp('❌ '+e.message);err.innerHTML='<div class="s" style="background:#ef444411;border:1px solid #ef444433;color:#fca5a5;margin-top:6px">❌ '+e.message+'</div>';btn.textContent='🔑 CONECTAR';btn.disabled=false}}
+function disc(){KP=null;CN=null;PK='';BL=0;SM=true;if(bOn)togBot();try{localStorage.removeItem('dc_k')}catch(_){}
+document.getElementById('cCard').style.display='block';document.getElementById('iCard').style.display='none';document.getElementById('tabs').style.display='none';
+document.getElementById('pk').value='';document.getElementById('cbtn').textContent='🔑 CONECTAR';document.getElementById('cbtn').disabled=false;stp('Desconectada')}
+
+// JUPITER SWAP
+async function jSwap(addr,amt,buy){const iM=buy?SOL:addr,oM=buy?addr:SOL,am=buy?Math.floor(amt*solanaWeb3.LAMPORTS_PER_SOL):Math.floor(amt*1e6);
+if(SM||!KP){al('[SIM] '+(buy?'BUY':'SELL')+' '+amt.toFixed(4)+'◎','#06b6d4');return{ok:true}}
+try{const qr=await tFetch('https://lite-api.jup.ag/swap/v1/quote?inputMint='+iM+'&outputMint='+oM+'&amount='+am+'&slippageBps=500',{},20000);
+if(!qr.ok)throw new Error('Q:'+qr.status);const q=await qr.json();if(q.error)throw new Error(q.error);
+const sr=await tFetch('https://lite-api.jup.ag/swap/v1/swap',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({quoteResponse:q,userPublicKey:PK,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true,prioritizationFeeLamports:'auto'})},20000);
+if(!sr.ok)throw new Error('S:'+sr.status);const sd=await sr.json();if(sd.error)throw new Error(sd.error);
+const tx=solanaWeb3.VersionedTransaction.deserialize(Uint8Array.from(atob(sd.swapTransaction),c=>c.charCodeAt(0)));
+tx.sign([KP]);const txId=await CN.sendRawTransaction(tx.serialize(),{skipPreflight:true,maxRetries:3});
+al('✅ TX: '+txId.slice(0,16)+'...','#86efac');
+setTimeout(async()=>{try{BL=(await CN.getBalance(KP.publicKey))/solanaWeb3.LAMPORTS_PER_SOL;document.getElementById('bl').textContent=BL.toFixed(4)+' SOL'}catch(_){}},5000);
+return{ok:true,txId}}catch(e){al('Swap: '+e.message,'#fca5a5');return{ok:false}}}
+
+// ============================================================
+// SNIPER MODULE
+// ============================================================
+async function sniperScan(){
+const all=[];
+for(const q of['pump.fun SOL','solana meme','solana new token','SOL trending','memecoin solana','solana pump']){
+try{const r=await tFetch(DEX+'/search?q='+encodeURIComponent(q),{},12000);if(r.ok){const d=await r.json();all.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'))}}catch(_){}}
+try{const r=await tFetch('https://api.dexscreener.com/token-boosts/top/v1',{},10000);if(r.ok){const d=await r.json();for(const t of(d||[]).filter(x=>x.chainId==='solana').slice(0,10)){try{const pr=await tFetch(DEX+'/tokens/'+t.tokenAddress,{},8000);if(pr.ok){const pd=await pr.json();all.push(...(pd.pairs||[]))}}catch(_){}}}}catch(_){}
+try{const r=await tFetch('https://api.dexscreener.com/token-profiles/latest/v1',{},10000);if(r.ok){const d=await r.json();for(const t of(d||[]).filter(x=>x.chainId==='solana').slice(0,6)){try{const pr=await tFetch(DEX+'/tokens/'+t.tokenAddress,{},8000);if(pr.ok){const pd=await pr.json();all.push(...(pd.pairs||[]))}}catch(_){}}}}catch(_){}
+const seen=new Set();
+snpTokens=all.filter(p=>{if(!p||seen.has(p.pairAddress))return false;seen.add(p.pairAddress);const mc=p.marketCap||p.fdv||0;return mc>=2e5&&mc<=2e7&&(p.liquidity?.usd||0)>=5e3}).map(p=>{
+const b5=p.txns?.m5?.buys||0,s5=p.txns?.m5?.sells||0,br=b5+s5>0?b5/(b5+s5):0,c5=p.priceChange?.m5||0,c1=p.priceChange?.h1||0;
+let sc=0;if(br>.7)sc+=25;else if(br>.6)sc+=15;if(c5>5&&c1>10)sc+=25;else if(c5>2)sc+=15;if(b5+s5>50)sc+=15;else if(b5+s5>20)sc+=8;if((p.liquidity?.usd||0)>5e4)sc+=10;
+return{sym:p.baseToken?.symbol||'?',addr:p.baseToken?.address||'',pr:+(p.priceUsd||0),mc:p.marketCap||p.fdv||0,liq:p.liquidity?.usd||0,br,c5,c1,sc,tx:b5+s5,src:'sniper'}}).sort((a,b)=>b.sc-a.sc);
+return snpTokens;
+}
+async function sniperBuy(tokens){
+if(pos.length>=MAX_POS||BL<E)return;
+const pick=tokens.find(t=>t.sc>=45&&t.br>=.55&&!pos.find(p=>p.addr===t.addr)&&!hist.slice(0,30).find(h=>h.addr===t.addr));
+if(!pick||pick.liq<5e3||(pick.mc>0&&pick.liq/pick.mc<.02))return;
+if(BL_ADDR.has(pick.addr)||BL_SYM.has(pick.sym.toUpperCase()))return;
+al('🎯 SNIPE: '+pick.sym+' Sc:'+pick.sc+' Buy:'+Math.round(pick.br*100)+'% MCap:$'+(pick.mc/1e6).toFixed(2)+'M','#ec4899');
+const r=await jSwap(pick.addr,E,true);
+if(r.ok){pos.push({sym:pick.sym,addr:pick.addr,ep:pick.pr,cp:pick.pr,pp:pick.pr,t1:false,t2:false,sd:0,rl:0,src:'🎯',time:Date.now()});sniperBuys++;al('✅ SNIPE '+pick.sym+' @ $'+pick.pr.toFixed(8),'#86efac');save()}}
+
+// ============================================================
+// COPY TRADER MODULE  
+// ============================================================
+async function discoverWallets(){
+const tokenAddrs=[];
+try{const r=await tFetch('https://api.dexscreener.com/token-boosts/top/v1',{},10000);if(r.ok){const d=await r.json();tokenAddrs.push(...(d||[]).filter(x=>x.chainId==='solana').slice(0,8).map(x=>x.tokenAddress))}}catch(_){}
+try{const r=await tFetch('https://api.dexscreener.com/token-profiles/latest/v1',{},10000);if(r.ok){const d=await r.json();tokenAddrs.push(...(d||[]).filter(x=>x.chainId==='solana').slice(0,6).map(x=>x.tokenAddress))}}catch(_){}
+for(const q of['solana pump','pump.fun SOL']){try{const r=await tFetch(DEX+'/search?q='+encodeURIComponent(q),{},10000);if(r.ok){const d=await r.json();tokenAddrs.push(...(d.pairs||[]).filter(p=>p.chainId==='solana'&&(p.priceChange?.h24||0)>50).slice(0,5).map(p=>p.baseToken?.address).filter(Boolean))}}catch(_){}}
+const cands=new Map();
+for(const ta of[...new Set(tokenAddrs)].slice(0,8)){
+try{const r=await tFetch(DEX+'/tokens/'+ta,{},8000);if(!r.ok)continue;const d=await r.json();const pair=(d.pairs||[]).find(p=>p.chainId==='solana');if(!pair)continue;
+const pa=pair.pairAddress,chg=pair.priceChange?.h24||0;
+if(CN&&chg>30){try{const pk=new solanaWeb3.PublicKey(pa);const sigs=await CN.getSignaturesForAddress(pk,{limit:15});
+for(const sig of sigs){try{const tx=await CN.getParsedTransaction(sig.signature,{maxSupportedTransactionVersion:0});if(!tx?.transaction)continue;
+const signer=(tx.transaction.message.accountKeys||[]).find(a=>a.signer);if(!signer)continue;const addr=signer.pubkey?.toString()||'';
+if(!addr||addr===pa)continue;
+if(!cands.has(addr))cands.set(addr,{addr,seen:1,tokens:[pair.baseToken?.symbol||'?']});
+else{const w=cands.get(addr);w.seen++;if(!w.tokens.includes(pair.baseToken?.symbol))w.tokens.push(pair.baseToken?.symbol)}
+}catch(_){}}
+}catch(_){}}}catch(_){}}
+let added=0;
+for(const[addr,data] of cands){
+if(data.seen>=2&&!wallets.find(w=>w.addr===addr)&&wallets.length<MAX_W){
+wallets.push({addr,score:data.seen*5+data.tokens.length*10,wins:0,losses:0,trades:0,lastSeen:Date.now(),pnl:0,cl:0,tokens:data.tokens,lastTx:''});
+added++;al('🆕 Wallet: '+addr.slice(0,6)+'... ('+data.tokens.join(',')+')','#c4b5fd');
+if(added>=3)break}}
+if(added)al('👁 +'+added+' wallets | Total: '+wallets.length,'#c4b5fd');
+save()}
+
+async function monitorWallets(){
+if(!CN)return;
+for(const w of wallets){
+try{const pk=new solanaWeb3.PublicKey(w.addr);const sigs=await CN.getSignaturesForAddress(pk,{limit:3});
+if(!sigs.length)continue;const ls=sigs[0].signature;if(ls===w.lastTx)continue;
+if(w.lastTx){
+try{const tx=await CN.getParsedTransaction(ls,{maxSupportedTransactionVersion:0});if(tx){
+const pre=tx.meta?.preTokenBalances||[],post=tx.meta?.postTokenBalances||[];
+for(const b of post){if(b.mint&&b.mint!==SOL&&b.owner===w.addr){
+const p=pre.find(x=>x.mint===b.mint&&x.owner===w.addr);
+const pa=p?+(p.uiTokenAmount?.uiAmount||0):0,po=+(b.uiTokenAmount?.uiAmount||0);
+if(po>pa){al('👁 '+w.addr.slice(0,6)+'... COMPRÓ '+b.mint.slice(0,8),'#86efac');await copyBuy(w,b.mint)}
+else if(po<pa){al('👁 '+w.addr.slice(0,6)+'... VENDIÓ '+b.mint.slice(0,8),'#fde68a');await copySell(w,b.mint)}
+}}}}catch(_){}}
+w.lastTx=ls;w.lastSeen=Date.now();
+}catch(_){await new Promise(r=>setTimeout(r,500))}}}
+
+async function copyBuy(wallet,tokenAddr){
+if(BL_ADDR.has(tokenAddr))return;
+if(pos.find(p=>p.addr===tokenAddr)||pos.length>=MAX_POS||BL<E)return;
+let sym='?',price=0,mcap=0;
+try{const r=await tFetch(DEX+'/tokens/'+tokenAddr,{},8000);if(r.ok){const d=await r.json();const pair=(d.pairs||[]).find(p=>p.chainId==='solana');
+if(pair){sym=pair.baseToken?.symbol||'?';price=+(pair.priceUsd||0);mcap=pair.marketCap||pair.fdv||0;
+if((pair.liquidity?.usd||0)<5000||mcap>2e7||mcap<5e4)return}}}catch(_){}
+if(BL_SYM.has(sym.toUpperCase()))return;
+al('👁🎯 COPY: '+sym+' MCap $'+(mcap/1e6).toFixed(2)+'M (de '+wallet.addr.slice(0,6)+')','#ec4899');
+const r=await jSwap(tokenAddr,E,true);
+if(r.ok){pos.push({sym,addr:tokenAddr,ep:price,cp:price,pp:price,t1:false,t2:false,sd:0,rl:0,src:'👁'+wallet.addr.slice(0,4),time:Date.now()});
+copyBuys++;wallet.trades++;al('✅ COPIED '+sym,'#86efac');save()}}
+
+async function copySell(wallet,tokenAddr){
+const p=pos.find(x=>x.addr===tokenAddr);if(!p)return;
+const m=p.ep>0?p.cp/p.ep:1,v=E*m;
+al('👁💰 COPY SELL: '+p.sym+' '+m.toFixed(2)+'x','#06b6d4');
+const r=await jSwap(tokenAddr,v,false);
+if(r.ok){const pnl=v-E;if(pnl>0){wallet.wins++;wallet.cl=0}else{wallet.losses++;wallet.cl++}
+wallet.pnl+=pnl;totPnl+=pnl;totTr++;
+hist.unshift({sym:p.sym,addr:tokenAddr,pnl,src:p.src,time:Date.now()});
+pos=pos.filter(x=>x.addr!==tokenAddr);
+if(wallet.cl>=3){wallets=wallets.filter(w=>w.addr!==wallet.addr);al('🚫 Eliminada wallet '+wallet.addr.slice(0,6),'#fca5a5')}
+save()}}
+
+// ============================================================
+// SHARED: MONITOR POSITIONS + TP/SL
+// ============================================================
+async function monitorPos(){
+for(const p of[...pos]){
+try{const r=await tFetch(DEX+'/tokens/'+p.addr,{},8000);if(r.ok){const d=await r.json();const pr=(d.pairs||[]).find(x=>x.chainId==='solana');if(pr)p.cp=+(pr.priceUsd||p.cp)}}catch(_){p.cp*=(1+(Math.random()-.46)*.01)}
+if(p.cp>p.pp)p.pp=p.cp;const m=p.ep>0?p.cp/p.ep:1;
+// TP1: 1.5x → 50%
+if(m>=1.5&&!p.t1){p.t1=true;const v=E*m*.5;await jSwap(p.addr,v,false);p.sd+=50;p.rl+=v;al('💰 '+p.sym+' TP1 1.5x → 50% ['+p.src+']','#06b6d4')}
+// TP2: 2.5x → SELL ALL
+else if(m>=2.5&&!p.t2&&p.sd<100){p.t2=true;const rem=100-p.sd;const v=E*m*(rem/100);await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;
+const pnl=p.rl-E;totPnl+=pnl;totTr++;hist.unshift({sym:p.sym,addr:p.addr,pnl,src:p.src,time:Date.now()});
+al('💰 '+p.sym+' TP2 2.5x → SELL ALL ['+p.src+']','#86efac');pos=pos.filter(x=>x.addr!==p.addr)}
+// SL: -25%
+else if(m<=.75&&p.sd<100){const v=E*m*(100-p.sd)/100;await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;
+const pnl=p.rl-E;totPnl+=pnl;totTr++;hist.unshift({sym:p.sym,addr:p.addr,pnl,src:p.src,time:Date.now()});
+al('🛑 '+p.sym+' SL '+(((m-1)*100).toFixed(0))+'% ['+p.src+']','#fca5a5');pos=pos.filter(x=>x.addr!==p.addr)}
+// Trailing: after 1.3x, drop 20%
+else if(m>=1.3&&p.sd<100){const dr=((p.pp-p.cp)/p.pp)*100;if(dr>=20){const v=E*m*(100-p.sd)/100;await jSwap(p.addr,v,false);p.sd=100;p.rl+=v;
+const pnl=p.rl-E;totPnl+=pnl;totTr++;hist.unshift({sym:p.sym,addr:p.addr,pnl,src:p.src,time:Date.now()});
+al('📉 '+p.sym+' Trail -'+dr.toFixed(0)+'% ['+p.src+']','#fde68a');pos=pos.filter(x=>x.addr!==p.addr)}}}
+pos=pos.filter(p=>p.sd<100);save()}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render(){
+// Stats
+const wr=totTr>0?(hist.filter(h=>(h.pnl||0)>0).length/totTr*100).toFixed(0):'-';
+document.getElementById('stats').innerHTML=
+`<div class="st"><div class="stl">P&L</div><div class="stv" style="color:${totPnl>=0?'#86efac':'#fca5a5'}">${totPnl>=0?'+':''}${totPnl.toFixed(3)}</div></div>
+<div class="st"><div class="stl">POS</div><div class="stv" style="color:#06b6d4">${pos.length}/${MAX_POS}</div></div>
+<div class="st"><div class="stl">🎯/👁</div><div class="stv">${sniperBuys}/${copyBuys}</div></div>
+<div class="st"><div class="stl">WR</div><div class="stv">${wr}%</div></div>`;
+
+// Positions
+document.getElementById('posL').innerHTML=pos.length?pos.map(p=>{const m=p.ep>0?p.cp/p.ep:1;
+return`<div class="wc"><div style="display:flex;justify-content:space-between"><div><b>${p.sym}</b> <span style="color:#5c6478;font-size:8px">${p.src}</span></div><div style="color:${m>=1?'#86efac':'#fca5a5'};font-weight:800;font-size:14px">${m.toFixed(2)}x</div></div>
+<div style="font-size:8px;color:#5c6478">Sold:${p.sd}% | Peak:${(p.pp/p.ep).toFixed(1)}x</div></div>`}).join('')+
+(hist.length?'<div style="margin-top:8px;font-size:8px;color:#5c6478;font-weight:700">HISTORIAL</div>'+hist.slice(0,10).map(h=>`<div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #1a203533"><span>${h.sym} <span style="color:#5c6478">${h.src||''}</span></span><span style="color:${(h.pnl||0)>=0?'#86efac':'#fca5a5'}">${(h.pnl||0)>=0?'+':''}${(h.pnl||0).toFixed(4)}◎</span></div>`).join(''):'')
+:'<div style="color:#5c6478;font-size:10px">Sin posiciones</div>';
+
+// Sniper tokens
+document.getElementById('snpL').innerHTML=snpTokens.length?snpTokens.slice(0,8).map(t=>`<div class="wc"><div style="display:flex;justify-content:space-between"><b>${t.sym}</b><span style="color:${t.sc>=55?'#86efac':t.sc>=40?'#fde68a':'#5c6478'};font-weight:700">${t.sc}pts</span></div><div style="font-size:8px;color:#5c6478">MCap:$${(t.mc/1e6).toFixed(2)}M | Buy:${Math.round(t.br*100)}% | 5m:${t.c5>0?'+':''}${t.c5.toFixed(0)}%</div></div>`).join(''):'<div style="color:#5c6478">Escaneando...</div>';
+
+// Wallets
+document.getElementById('wltL').innerHTML=wallets.length?wallets.sort((a,b)=>b.score-a.score).map(w=>{const wr2=w.trades>0?((w.wins/w.trades)*100).toFixed(0):'-';
+return`<div class="wc"><div style="display:flex;justify-content:space-between"><div style="font-size:9px;color:#a78bfa;word-break:break-all">${w.addr.slice(0,12)}...${w.addr.slice(-6)}</div><div style="font-size:11px;font-weight:800;color:${w.score>20?'#86efac':'#5c6478'}">${w.score}pts</div></div>
+<div style="font-size:8px;color:#5c6478">W:${w.wins} L:${w.losses} WR:${wr2}% PnL:${w.pnl>=0?'+':''}${w.pnl.toFixed(3)}◎ | ${(w.tokens||[]).join(',')}</div></div>`}).join(''):'<div style="color:#5c6478">Descubriendo...</div>';
+}
+
+// ============================================================
+// MAIN CYCLE
+// ============================================================
+async function cycle(){scN++;try{
+await CN?.getBalance(KP.publicKey).then(l=>{BL=l/solanaWeb3.LAMPORTS_PER_SOL;document.getElementById('bl').textContent=BL.toFixed(4)+' SOL'}).catch(_=>{});
+// Sniper scan every cycle
+const tokens=await sniperScan();
+await sniperBuy(tokens);
+// Copy: discover wallets every 5 cycles
+if(scN%5===1||wallets.length===0)await discoverWallets();
+// Copy: monitor wallets
+await monitorWallets();
+// Monitor all positions
+await monitorPos();
+// Render
+render();
+if(scN%4===0)al('Scan #'+scN+' | '+snpTokens.length+'tk | '+wallets.length+'w | '+pos.length+'pos | Bal:'+BL.toFixed(3)+'◎');
+stp(bOn?'⚡ Activo #'+scN+' | 🎯'+snpTokens.length+'tk 👁'+wallets.length+'w | '+pos.length+'pos':'Off');
+}catch(e){al('Err: '+e.message,'#fca5a5')}}
+
+function togBot(){const btn=document.getElementById('bbtn');if(bOn){clearInterval(bIv);bOn=false;btn.textContent='▶ INICIAR DUAL BOT';btn.className='b bg';al('⏹ Stop','#fde68a');stp('Off')}
+else{bOn=true;btn.textContent='⏹ DETENER';btn.className='b br';al('⚡ DUAL BOT: Sniper + Copy | Scan 15s | MCap<$20M','#86efac');cycle();bIv=setInterval(cycle,15000)}}
+
+window.addEventListener('load',async()=>{let t=0;while(!window.solanaWeb3&&t<20){await new Promise(r=>setTimeout(r,500));t++}
+if(window.solanaWeb3){stp('✅ Listo');al('Solana Web3 ✓','#86efac')}else{stp('❌ Web3 no cargó')}
+load();
+try{const s=localStorage.getItem('dc_k');if(s&&window.solanaWeb3){document.getElementById('pk').value=s;await new Promise(r=>setTimeout(r,500));await doConn()}}catch(_){}})
+</script></body></html>
